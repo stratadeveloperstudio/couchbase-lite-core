@@ -42,8 +42,8 @@ namespace c4Internal {
 
 
     /** A versioned LiteCore document.
-        This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
-        and VectorDocument (version-vectors).
+        This is an abstract base class whose concrete subclasses are TreeDocument (revision trees) 
+        and LeafDocument (single revisions)
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public C4Document, fleece::InstanceCountedIn<Document> {
     public:

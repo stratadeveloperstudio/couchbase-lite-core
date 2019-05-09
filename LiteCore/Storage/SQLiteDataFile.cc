@@ -19,6 +19,7 @@
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
+#include "BothKeyStore.hh"
 #include "Record.hh"
 #include "UnicodeCollator.hh"
 #include "Error.hh"
@@ -399,7 +400,13 @@ namespace litecore {
 
 
     KeyStore* SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
-        return new SQLiteKeyStore(*this, name, options);
+        Assert(name != "dead"); // can't access this directly
+        auto keyStore = new SQLiteKeyStore(*this, name, options);
+        if (name == kDefaultKeyStoreName) {
+            return new BothKeyStore(keyStore, new SQLiteKeyStore(*this, "dead", options));
+        } else {
+            return keyStore;
+        }
     }
 
 #if ENABLE_DELETE_KEY_STORES
@@ -415,11 +422,6 @@ namespace litecore {
 
 
     void SQLiteDataFile::_endTransaction(Transaction *t, bool commit) {
-        // Notify key-stores so they can save state:
-        forOpenKeyStores([commit](KeyStore &ks) {
-            ((SQLiteKeyStore&)ks).transactionWillEnd(commit);
-        });
-
         exec(commit ? "COMMIT" : "ROLLBACK");
     }
 

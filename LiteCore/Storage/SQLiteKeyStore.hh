@@ -50,8 +50,6 @@ namespace litecore {
 
         bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) override;
 
-        void erase() override;
-
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
         virtual expiration_t nextExpiration() override;
@@ -74,6 +72,7 @@ namespace litecore {
 #endif
         virtual bool tableExists(const std::string &tableName) const override;
 
+        void shareSequencesWith(KeyStore&) override;
 
     protected:
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
@@ -85,7 +84,7 @@ namespace litecore {
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sqlTemplate) const;
 
-        void transactionWillEnd(bool commit);
+        void transactionWillEnd(bool commit) override;
 
         void close() override;
 
@@ -140,6 +139,8 @@ namespace litecore {
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};
         bool _hasExpirationColumn {false};
+        bool _uncommittedExpirationColumn {false};
+        SQLiteKeyStore* _sequencesOwner {nullptr};
     };
 
 }

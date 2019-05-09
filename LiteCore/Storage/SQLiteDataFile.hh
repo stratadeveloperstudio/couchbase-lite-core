@@ -141,6 +141,7 @@ namespace litecore {
         std::vector<IndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        std::unique_ptr<SQLiteKeyStore> _realDefaultKeyStore;
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         CollationContextVector _collationContexts;
     };

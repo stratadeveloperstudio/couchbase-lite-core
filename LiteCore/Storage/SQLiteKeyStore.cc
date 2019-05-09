@@ -140,42 +140,55 @@ namespace litecore {
     }
 
 
+    void SQLiteKeyStore::shareSequencesWith(KeyStore &source) {
+        _sequencesOwner = dynamic_cast<SQLiteKeyStore*>(&source);
+    }
+
+
     sequence_t SQLiteKeyStore::lastSequence() const {
-        if (_lastSequence >= 0)
-            return _lastSequence;
-        sequence_t seq = db().lastSequence(_name);
-        if (db().inTransaction())
-            const_cast<SQLiteKeyStore*>(this)->_lastSequence = seq;
-        return seq;
+        if (_sequencesOwner) {
+            return _sequencesOwner->lastSequence();
+        } else {
+            if (_lastSequence >= 0)
+                return _lastSequence;
+            sequence_t seq = db().lastSequence(_name);
+            if (db().inTransaction())
+                const_cast<SQLiteKeyStore*>(this)->_lastSequence = seq;
+            return seq;
+        }
     }
 
     
     void SQLiteKeyStore::setLastSequence(sequence_t seq) {
-        if (_capabilities.sequences) {
-            _lastSequence = seq;
-            _lastSequenceChanged = true;
+        if (_sequencesOwner) {
+            _sequencesOwner->setLastSequence(seq);
+        } else {
+            if (_capabilities.sequences) {
+                _lastSequence = seq;
+                _lastSequenceChanged = true;
+            }
         }
     }
 
 
     void SQLiteKeyStore::transactionWillEnd(bool commit) {
         if (_lastSequenceChanged) {
+            Assert(!_sequencesOwner);
             if (commit)
                 db().setLastSequence(*this, _lastSequence);
             _lastSequenceChanged = false;
         }
         _lastSequence = -1;
+
+        if (!commit && _uncommittedExpirationColumn)
+            _hasExpirationColumn = false;
+        _uncommittedExpirationColumn = false;
     }
 
 
     /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column &col) {
         return slice(col.getBlob(), col.getBytes());
     }
-
-
-    // OPT: Would be nice to avoid copying key/vers/body here; this would require Record to
-    // know that the pointers are ephemeral, and create copies if they're accessed as
-    // alloc_slice (not just slice).
 
 
     // Gets flags from col 1, version from col 3, and body (or its length) from col 4
@@ -323,14 +336,6 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::erase() {
-        Transaction t(db());
-        db().exec(string("DELETE FROM kv_"+name()));
-        setLastSequence(0);
-        t.commit();
-    }
-
-
     void SQLiteKeyStore::createTrigger(const string &triggerName,
                                        const char *triggerSuffix,
                                        const char *operation,
@@ -368,6 +373,7 @@ namespace litecore {
                     "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
                     "CREATE INDEX kv_@_expiration ON kv_@ (expiration) WHERE expiration not null"));
         _hasExpirationColumn = true;
+        _uncommittedExpirationColumn = true;
     }
 
 

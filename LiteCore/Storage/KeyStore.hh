@@ -61,9 +61,8 @@ namespace litecore {
         virtual uint64_t recordCount() const =0;
         virtual sequence_t lastSequence() const =0;
 
-        virtual void erase() =0;
-
 #if ENABLE_DELETE_KEY_STORES
+        virtual void erase() =0;
         void deleteKeyStore(Transaction&);
 #endif
 
@@ -88,9 +87,15 @@ namespace litecore {
 
         //////// Writing:
 
-        /** Core write method. If replacingSequence is not null, will only update the
-            record if its existing sequence matches. (Or if the record doesn't already
-            exist, in the case where *replacingSequence == 0.) */
+        /** Core write method.
+            If replacingSequence is not null, will only update the
+            record if its existing sequence matches (or if the record doesn't already
+            exist, in the case where *replacingSequence == 0) ... else returns 0.
+         
+            If newSequence is false, the document's current sequence will not be altered;
+            this must be used with *replacingSequence > 0.
+
+            Returns the new sequence number, or 0 on conflict. */
         virtual sequence_t set(slice key, slice version, slice value,
                                DocumentFlags,
                                Transaction&,
@@ -110,6 +115,7 @@ namespace litecore {
         /** Sets a flag of a record, without having to read/write the Record. */
         virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) =0;
 
+        virtual void transactionWillEnd(bool commit)                { }
 
         //////// Expiration:
 
@@ -172,6 +178,8 @@ namespace litecore {
         virtual void deleteIndex(slice name) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
 
+        virtual void shareSequencesWith(KeyStore&) =0;
+
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }
 
@@ -194,6 +202,7 @@ namespace litecore {
         KeyStore(const KeyStore&) = delete;     // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
 
+        friend class BothKeyStore;
         friend class DataFile;
         friend class RecordEnumerator;
         friend class Query;
