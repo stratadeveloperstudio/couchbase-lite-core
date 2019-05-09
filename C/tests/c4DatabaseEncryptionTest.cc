@@ -137,19 +137,14 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
 
 
 static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
-    static const C4DatabaseFlags kFlagsToTry[3] = {kC4DB_ReadOnly, kC4DB_NoUpgrade, 0};
-
-    for (int i = 0; i < 3; i++) {
-        C4DatabaseConfig config = { };
-        config.flags = kFlagsToTry[i];
-        config.encryptionKey.algorithm = kC4EncryptionAES256;
-        memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
-        C4Error error;
-        C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
-        auto db = c4db_open(copyFixtureDB(dbPath), &config, &error);
-        CHECK(db);
-        c4db_free(db);
-    }
+    C4DatabaseConfig config = { };
+    config.encryptionKey.algorithm = kC4EncryptionAES256;
+    memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
+    C4Error error;
+    C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
+    auto db = c4db_open(copyFixtureDB(dbPath), &config, &error);
+    CHECK(db);
+    c4db_free(db);
 }
 
 

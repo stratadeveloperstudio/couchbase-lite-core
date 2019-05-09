@@ -23,51 +23,56 @@
 namespace litecore {
     using namespace std;
 
+    // Enumerator implementation for BothKeyStore. It enumerates both KeyStores in parallel,
+    // always returning the lowest-sorting record (basically a merge-sort.)
     class BothEnumeratorImpl : public RecordEnumerator::Impl {
     public:
-        BothEnumeratorImpl(RecordEnumerator::Impl *liveImpl,
-                           RecordEnumerator::Impl *deadImpl,
-                           bool bySequence)
-        :_liveImpl(liveImpl)
-        ,_deadImpl(deadImpl)
+        BothEnumeratorImpl(bool bySequence,
+                           sequence_t since,
+                           RecordEnumerator::Options options,
+                           KeyStore *liveStore, KeyStore *deadStore)
+        :_liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
+        ,_deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
         ,_bySequence(bySequence)
         { }
 
         virtual bool next() override {
-            if (!_first || _liveImpl.get() == _first) {
+            // Advance the enumerator whose value was used last:
+            if (_current == nullptr || _current == _liveImpl.get()) {
                 if (!_liveImpl->next())
                     _liveImpl.reset();
             }
-            if (!_first || _deadImpl.get() == _first) {
+            if (_current == nullptr || _current == _deadImpl.get()) {
                 if (!_deadImpl->next())
                     _deadImpl.reset();
             }
 
-            bool liveIsFirst;
+            // Pick the enumerator with the lowest key/sequence to be used next:
+            bool useLive;
             if (_liveImpl && _deadImpl) {
                 if (_bySequence)
-                    liveIsFirst = _liveImpl->sequence() < _deadImpl->sequence();
+                    useLive = _liveImpl->sequence() < _deadImpl->sequence();
                 else
-                    liveIsFirst = _liveImpl->key() < _deadImpl->key();
+                    useLive = _liveImpl->key() < _deadImpl->key();
             } else if (_liveImpl || _deadImpl) {
-                liveIsFirst = _liveImpl != nullptr;
+                useLive = _liveImpl != nullptr;
             } else {
-                _first = nullptr;
+                _current = nullptr;
                 return false;
             }
 
-            _first = (liveIsFirst ? _liveImpl : _deadImpl).get();
+            _current = (useLive ? _liveImpl : _deadImpl).get();
             return true;
         }
 
-        virtual bool read(Record &record) const override    {return _first->read(record);}
-        virtual slice key() const override                  {return _first->key();}
-        virtual sequence_t sequence() const override        {return _first->sequence();}
+        virtual bool read(Record &record) const override    {return _current->read(record);}
+        virtual slice key() const override                  {return _current->key();}
+        virtual sequence_t sequence() const override        {return _current->sequence();}
 
     private:
-        unique_ptr<RecordEnumerator::Impl> _liveImpl, _deadImpl;
-        RecordEnumerator::Impl* _first {nullptr};
-        bool _bySequence;
+        unique_ptr<RecordEnumerator::Impl> _liveImpl, _deadImpl;    // Real enumerators
+        RecordEnumerator::Impl* _current {nullptr};                 // Enumerator w/lowest key
+        bool _bySequence;                                           // Sorting by sequence?
     };
 
 
@@ -76,9 +81,8 @@ namespace litecore {
                                                             RecordEnumerator::Options options)
     {
         if (options.includeDeleted) {
-            auto liveImpl = _liveStore->newEnumeratorImpl(bySequence, since, options);
-            auto deadImpl = _deadStore->newEnumeratorImpl(bySequence, since, options);
-            return new BothEnumeratorImpl(liveImpl, deadImpl, bySequence);
+            return new BothEnumeratorImpl(bySequence, since, options,
+                                          _liveStore.get(), _deadStore.get());
         } else {
             return _liveStore->newEnumeratorImpl(bySequence, since, options);
         }

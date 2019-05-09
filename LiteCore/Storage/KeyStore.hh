@@ -203,6 +203,7 @@ namespace litecore {
         KeyStore& operator=(const KeyStore&) = delete;
 
         friend class BothKeyStore;
+        friend class BothEnumeratorImpl;
         friend class DataFile;
         friend class RecordEnumerator;
         friend class Query;
