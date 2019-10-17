@@ -65,12 +65,13 @@ option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
 add_definitions(
     -DCMAKE                             # Let the source know this is a CMAKE build
+    -D__STDC_FORMAT_MACROS              # Enable macros for formatting types like size_t, etc
 )
 
 if(BUILD_ENTERPRISE)
     add_definitions(
         -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
-    )         
+    )
 endif()
 
 if(MSVC)
@@ -150,7 +151,7 @@ target_include_directories(
     LiteCore/RevID
     vendor/mbedtls/include
     C
-    C/include 
+    C/include
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/BLIP-Cpp/src/websocket
@@ -164,7 +165,7 @@ setup_support_build()
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
-    LiteCoreStatic PRIVATE 
+    LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
     -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1  # Default to NORMAL sync mode on SQLite (safe with WAL mode)
     -DSQLITE_LIKE_DOESNT_MATCH_BLOBS    # Optimize SQLite "like" queries
@@ -189,7 +190,7 @@ if(BUILD_ENTERPRISE)
     target_compile_definitions(
         LiteCoreStatic PRIVATE
         -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
-    )   
+    )
 endif()
 
 target_include_directories(
@@ -207,7 +208,7 @@ target_include_directories(
     LiteCore/Support
     vendor/mbedtls/include
     C
-    C/include 
+    C/include
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/SQLiteCpp/sqlite3
@@ -232,7 +233,7 @@ endif()
 # Library flags defined in platform_linux
 # LITECORE_CRYPTO_LIB defined in platform CMake files
 set(
-    LITECORE_LIBRARIES_PRIVATE  
+    LITECORE_LIBRARIES_PRIVATE
     ${WHOLE_LIBRARY_FLAG}
     LiteCoreStatic
     FleeceStatic

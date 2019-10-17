@@ -62,6 +62,19 @@ function(setup_globals)
     # *before* the target declaration as it affects all subsequent targets.
     get_filename_component (LIBCXX_LIBDIR "${LIBCXX_LIB}" DIRECTORY)
     link_directories (${LIBCXX_LIBDIR})
+
+    find_path(LIBZ_INCLUDE zlib.h
+        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/zlib.exploded"
+        PATH_SUFFIXES include)
+    if(NOT LIBZ_INCLUDE)
+        message(FATAL_ERROR "libz header files not found")
+    endif()
+    include_directories("${LIBZ_INCLUDE}")
+
+    find_library(LIBZ z)
+    if(NOT LIBZ)
+        message(FATAL_ERROR "libz not found")
+    endif()
 endfunction()
 
 function(set_litecore_source)
@@ -99,7 +112,7 @@ function(setup_litecore_build)
 
     target_link_libraries(
         LiteCore PRIVATE 
-        z 
+        ${LIBZ}
         ${ICU4C_COMMON} 
         ${ICU4C_I18N}
     )
