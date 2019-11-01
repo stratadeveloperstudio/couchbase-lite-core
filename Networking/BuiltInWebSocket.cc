@@ -30,6 +30,8 @@
 #include "sockpp/exception.h"
 #include <string>
 
+#include <functional>
+
 using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;

@@ -6,8 +6,16 @@ function(setup_globals_linux)
     set(LITECORE_CRYPTO_LIB mbedcrypto CACHE INTERNAL "")
     add_definitions(-D_CRYPTO_MBEDTLS)
 
-    set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive" CACHE INTERNAL "")
-    set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
+    # set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive" CACHE INTERNAL "")
+    # set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
+
+    if(UNIX AND NOT APPLE)
+        set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive" CACHE INTERNAL "")    
+        set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
+    else()
+        set(WHOLE_LIBRARY_FLAG "-Wl" CACHE INTERNAL "")
+        set(NO_WHOLE_LIBRARY_FLAG "-Wl" CACHE INTERNAL "")
+    endif()
 endfunction()
 
 function(set_litecore_source_linux)

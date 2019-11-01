@@ -172,7 +172,8 @@ target_include_directories(
     LiteCore/Query
     LiteCore/RevID
     Crypto
-    Network
+    # Network
+    Networking
     vendor/mbedtls/include
     C
     C/include 
@@ -195,6 +196,7 @@ set(
     Networking/HTTPLogic.cc
     Networking/TCPSocket.cc
     Networking/BuiltInWebSocket.cc
+    Networking/TLSContext.cc
     REST/netUtils.cc
     vendor/sockpp/src/acceptor.cpp
     vendor/sockpp/src/connector.cpp
